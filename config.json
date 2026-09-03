@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "circleci": {
+      "command": "circleci",
+      "args": ["mcp", "start"]
+    },
+    "circleci-cost": {
+      "command": "python3",
+      "args": ["/app/circleci_server.py"]
+    }
+  }
+}
