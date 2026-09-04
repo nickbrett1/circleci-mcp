@@ -2,8 +2,8 @@
 #
 # Base: mcpo (ghcr.io/open-webui/mcpo) bridges the stdio CircleCI CLI MCP
 # server to OpenAPI/Streamable HTTP for Open WebUI. We add the circleci CLI
-# binary plus the curated circleci_server.py and config.json so the image is
-# fully self-contained (no host bind-mounts) -> reproducible and
+# binary plus the curated servers and config so the image is fully
+# self-contained (no host bind-mounts) -> reproducible and
 # watchtower-updatable on every publish.
 FROM ghcr.io/open-webui/mcpo:main
 
@@ -22,6 +22,7 @@ RUN apt-get update \
  && rm /tmp/ccli.tgz \
  && circleci version
 
-# Curated server + mcpo config baked into the image (replaces host bind-mounts).
+# Curated servers + mcpo config baked into the image (replaces host bind-mounts).
 COPY config.json /app/config.json
 COPY circleci_server.py /app/circleci_server.py
+COPY circleci_lite_server.py /app/circleci_lite_server.py

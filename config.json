@@ -2,11 +2,22 @@
   "mcpServers": {
     "circleci": {
       "command": "circleci",
-      "args": ["mcp", "start"]
+      "args": [
+        "mcp",
+        "start"
+      ]
     },
     "circleci-cost": {
       "command": "python3",
-      "args": ["/app/circleci_server.py"]
+      "args": [
+        "/app/circleci_server.py"
+      ]
+    },
+    "circleci-lite": {
+      "command": "python3",
+      "args": [
+        "/app/circleci_lite_server.py"
+      ]
     }
   }
 }
