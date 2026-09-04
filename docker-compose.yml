@@ -1,6 +1,6 @@
-# Docker Compose for circleci-mcp / circleci-cost-mcp
+# Docker Compose for circleci-mcp / circleci-cost-mcp / circleci-lite-mcp
 #
-# Both services run the same published GHCR image
+# All three services run the same published GHCR image
 # (ghcr.io/nickbrett1/circleci-mcp). watchtower-nick (scope=nick, 60s poll)
 # auto-updates them on every new GHCR publish.
 #
@@ -11,8 +11,8 @@
 
 services:
   circleci-mcp:
-    # mcpo bridge (OpenAPI/SSE) exposing the CircleCI CLI MCP + curated server
-    # to Open WebUI. Single curated toolset defined in /app/config.json.
+    # mcpo bridge (OpenAPI/SSE) exposing all three MCP servers (full CLI,
+    # circleci-cost, circleci-lite) to Open WebUI. Toolset defined in /app/config.json.
     image: ghcr.io/nickbrett1/circleci-mcp:latest
     container_name: circleci-mcp
     restart: always
@@ -33,9 +33,9 @@ services:
       - "com.centurylinklabs.watchtower.scope=nick"
 
   circleci-cost-mcp:
-    # Native MCP-over-HTTP (Streamable HTTP) for the same curated server, so any
-    # MCP client (goose, claude, cursor, ...) can hit http://circleci-cost-mcp:8768/mcp
-    # directly instead of going through mcpo's OpenAPI bridge.
+    # Native MCP-over-HTTP (Streamable HTTP) for the circleci-cost server, so
+    # any MCP client (goose, claude, cursor, ...) can hit
+    # http://circleci-cost-mcp:8768/mcp directly instead of through mcpo.
     image: ghcr.io/nickbrett1/circleci-mcp:latest
     container_name: circleci-cost-mcp
     restart: always
@@ -50,6 +50,32 @@ services:
       - TRANSPORT=streamable-http
       - FASTMCP_HOST=0.0.0.0
       - FASTMCP_PORT=8768
+    env_file:
+      - .env
+    networks:
+      - default
+      - ai_proxy
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=nick"
+
+  circleci-lite-mcp:
+    # Native MCP-over-HTTP (Streamable HTTP) for the circleci-lite server, for
+    # any MCP client that wants the narrow run-status + build-log toolset.
+    image: ghcr.io/nickbrett1/circleci-mcp:latest
+    container_name: circleci-lite-mcp
+    restart: always
+    mem_limit: 256m
+    memswap_limit: 256m
+    entrypoint: ["python3"]
+    command: ["/app/circleci_lite_server.py"]
+    ports:
+      - "127.0.0.1:8769:8769"
+    environment:
+      - TZ=US/Eastern
+      - TRANSPORT=streamable-http
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_PORT=8769
     env_file:
       - .env
     networks:

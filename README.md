@@ -1,32 +1,41 @@
 # circleci-mcp
 
-Curated CircleCI MCP servers for Open WebUI, published to GHCR and auto-updated by Watchtower.
+Curated CircleCI MCP servers for Open WebUI, published to GHCR and auto-updated
+by Watchtower. Three MCP servers are baked into the image and exposed together:
 
-This is the **only** CircleCI MCP surface exposed on the NAS. It intentionally replaces
-the generic 156-tool CLI MCP with a small, focused set that uses API endpoints verified to
-work with a normal personal API token (the CircleCI **Insights** API for credit/usage data,
-plus standard v2 pipeline endpoints for run history).
+| Server          | What it exposes                                                                  |
+|-----------------|----------------------------------------------------------------------------------|
+| `circleci`      | the **full** native CircleCI CLI MCP (`circleci mcp start`, ~150 tools)          |
+| `circleci-cost` | credit/compute usage + run history (4 tools, Insights API)                       |
+| `circleci-lite` | narrow run-status + build-log server (3 tools) for day-to-day dev                |
 
-The published image is built on `ghcr.io/open-webui/mcpo` (which bridges the stdio CircleCI
-CLI MCP server to OpenAPI/Streamable HTTP) plus the pinned CircleCI CLI binary and this
-repo's curated `circleci_server.py` / `config.json`, baked into the image (no host mounts).
+`circleci-cost` and `circleci-lite` are small FastMCP servers written in this
+repo, so they stay cheap in model context; `circleci` is the generic CLI MCP for
+full control when you need it.
+
+The image is built on `ghcr.io/open-webui/mcpo` (which bridges stdio MCP
+servers to OpenAPI/Streamable HTTP) plus the pinned CircleCI CLI binary and this
+repo's servers/config, baked into the image (no host mounts).
 
 ## Services
 
-Two services run the same image, published by CircleCI to `ghcr.io/nickbrett1/circleci-mcp`
-and auto-updated by `watchtower-nick` (scope `nick`, 60s poll):
+Three services run the same image, published by CircleCI to
+`ghcr.io/nickbrett1/circleci-mcp` and auto-updated by `watchtower-nick`
+(scope `nick`, 60s poll):
 
-| Service             | Port                 | How it serves                                    |
-|---------------------|----------------------|--------------------------------------------------|
-| `circleci-mcp`      | `127.0.0.1:8767`     | mcpo bridge (OpenAPI/SSE) → Open WebUI           |
-| `circleci-cost-mcp` | `127.0.0.1:8768`     | native Streamable HTTP MCP (`/mcp`) for any client |
+| Service              | Port                 | How it serves                                    |
+|----------------------|----------------------|--------------------------------------------------|
+| `circleci-mcp`       | `127.0.0.1:8767`     | mcpo bridge (OpenAPI/SSE) → Open WebUI           |
+| `circleci-cost-mcp`  | `127.0.0.1:8768`     | native Streamable HTTP MCP (`/mcp`) for any client |
+| `circleci-lite-mcp`  | `127.0.0.1:8769`     | native Streamable HTTP MCP (`/mcp`) for any client |
 
 ## Files
 
-- `Dockerfile` — mcpo base + pinned CircleCI CLI + baked-in server/config.
-- `circleci_server.py` — the curated FastMCP server (Insights + pipeline tools).
-- `config.json` — mcpo config wiring the CLI MCP and the curated python server.
-- `docker-compose.yml` — the two services (NAS deployment).
+- `Dockerfile` — mcpo base + pinned CircleCI CLI + baked-in servers/config.
+- `circleci_server.py` — the curated `circleci-cost` FastMCP server (Insights).
+- `circleci_lite_server.py` — the curated `circleci-lite` FastMCP server (run status + build logs).
+- `config.json` — mcpo config wiring all three servers.
+- `docker-compose.yml` — the three services (NAS deployment).
 - `.env.example` — copy to `.env` (NAS-side, never committed) with `CIRCLE_TOKEN`.
 
 ## Deploy (NAS)
